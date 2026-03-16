@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <meta charset="UTF-8">
+    <title>静态导航页</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>导航页</h1>
+        <div>
+            <label for="configUrl">配置文件URL：</label>
+            <input type="text" id="configUrl" value="./navi.json" style="width:300px">
+            <button onclick="loadConfig()">加载</button>
+        </div>
+        <div id="navList"></div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
+    <script src="main.js"></script>
+</body>
+</html>
