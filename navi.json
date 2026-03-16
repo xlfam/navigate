@@ -1,21 +1,46 @@
 {
   "categories": [
     {
-      "name": "常用",
-      "subcategories": [
-        {
-          "name": "搜索",
-          "links": [
-            { "name": "百度", "url": "https://www.baidu.com" },
-            { "name": "谷歌", "url": "https://www.google.com" }
-          ]
-        },
-        {
-          "name": "社区",
-          "links": [
-            { "name": "知乎", "url": "https://www.zhihu.com" }
-          ]
-        }
+      "name": "常用工具",
+      "icon": "🛠️",
+      "links": [
+        { "title": "Google", "url": "https://www.google.com" },
+        { "title": "百度", "url": "https://www.baidu.com" },
+        { "title": "Bing", "url": "https://www.bing.com" },
+        { "title": "GitHub", "url": "https://github.com" },
+        { "title": "知乎", "url": "https://www.zhihu.com" }
+      ]
+    },
+    {
+      "name": "人工智能",
+      "icon": "🤖",
+      "links": [
+        { "title": "ChatGPT", "url": "https://chat.openai.com" },
+        { "title": "Midjourney", "url": "https://www.midjourney.com" },
+        { "title": "Hugging Face", "url": "https://huggingface.co" },
+        { "title": "Stable Diffusion", "url": "https://stability.ai" },
+        { "title": "NVIDIA AI", "url": "https://www.nvidia.com/en-us/ai/" }
+      ]
+    },
+    {
+      "name": "开发文档",
+      "icon": "📚",
+      "links": [
+        { "title": "MDN Web Docs", "url": "https://developer.mozilla.org" },
+        { "title": "React", "url": "https://react.dev" },
+        { "title": "Vue.js", "url": "https://vuejs.org" },
+        { "title": "Python", "url": "https://www.python.org" },
+        { "title": "Go", "url": "https://go.dev" }
+      ]
+    },
+    {
+      "name": "设计素材",
+      "icon": "🎨",
+      "links": [
+        { "title": "Dribbble", "url": "https://dribbble.com" },
+        { "title": "Behance", "url": "https://www.behance.net" },
+        { "title": "Unsplash", "url": "https://unsplash.com" },
+        { "title": "Pinterest", "url": "https://www.pinterest.com" }
       ]
     }
   ]
