@@ -9,9 +9,10 @@
 <body>
     <div class="container">
         <h1>导航页</h1>
-        <div>
+        <input id="searchBar" type="text" placeholder="搜索网址或分类..." oninput="filterNav()">
+        <div style="margin-bottom:18px">
             <label for="configUrl">配置文件URL：</label>
-            <input type="text" id="configUrl" value="./navi.json" style="width:300px">
+            <input type="text" id="configUrl" value="https://cdn.jsdelivr.net/gh/xlfam/navigate@main/navi.json" style="width:300px">
             <button onclick="loadConfig()">加载</button>
         </div>
         <div id="navList"></div>

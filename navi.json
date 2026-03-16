@@ -1,6 +1,22 @@
 {
-  "links": [
-    { "name": "百度", "url": "https://www.baidu.com" },
-    { "name": "知乎", "url": "https://www.zhihu.com" }
+  "categories": [
+    {
+      "name": "常用",
+      "subcategories": [
+        {
+          "name": "搜索",
+          "links": [
+            { "name": "百度", "url": "https://www.baidu.com" },
+            { "name": "谷歌", "url": "https://www.google.com" }
+          ]
+        },
+        {
+          "name": "社区",
+          "links": [
+            { "name": "知乎", "url": "https://www.zhihu.com" }
+          ]
+        }
+      ]
+    }
   ]
 }
