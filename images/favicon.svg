@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="200" height="200">
+  <!-- 背景圆角矩形 -->
+  <rect x="0" y="0" width="100" height="100" rx="24" fill="#3b82f6"/>
+  <!-- 指南针箭头 -->
+  <path d="M50 25 L75 50 L50 75 L25 50 Z" fill="none" stroke="white" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- 指向右上的实心箭头 -->
+  <path d="M50 25 L50 75 M25 50 L75 50" stroke="white" stroke-width="6" stroke-linecap="round"/>
+  <path d="M50 25 L58 42 L50 50 L42 42 Z" fill="white"/>
+</svg>

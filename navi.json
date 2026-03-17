@@ -1,20 +1,24 @@
 {
+  "version": "1.1",
+  "searchEngines": [
+    { 
+      "name": "Google", 
+      "url": "https://www.google.com/search?q=", 
+      "icon": "fab fa-google" 
+    }
+  ],
   "categories": [
     {
-      "name": "常用",
-      "subcategories": [
+      "id": "nas",
+      "name": "我的服务",
+      "icon": "fa-server",
+      "items": [
         {
-          "name": "搜索",
-          "links": [
-            { "name": "百度", "url": "https://www.baidu.com" },
-            { "name": "谷歌", "url": "https://www.google.com" }
-          ]
-        },
-        {
-          "name": "社区",
-          "links": [
-            { "name": "知乎", "url": "https://www.zhihu.com" }
-          ]
+          "title": "NAS 管理界面",
+          "icon": "https://example.com/icon.png",
+          "url": "默认地址",
+          "url_in": "http://192.168.1.10:5000", 
+          "url_out": "https://nas.example.com"
         }
       ]
     }

@@ -1,23 +1,886 @@
 <!DOCTYPE html>
-<html lang="zh-cn">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>静态导航页</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>xlfam</title><!-- 指定网站图标 -->
+    <link rel="icon" href="https://raw.githubusercontent.com/xlfam/navigate/refs/heads/main/images/favicon.svg" type="image/x-icon">
+    <style>
+        :root {
+            --primary-color: #3b82f6;
+            --bg-color: #f8fafc;
+            --sidebar-bg: #ffffff;
+            --card-bg: #ffffff;
+            --text-color: #334155;
+            --text-secondary: #64748b;
+            --border-color: #e2e8f0;
+            --hover-bg: #f1f5f9;
+            --shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; transition: all 0.2s ease; }
+        
+        /* 
+           核心修改：锁定 Body 
+           使用 position: fixed 确保页面根容器不会随浏览器滚动条滚动。
+           使用 100vh 确保占据全屏高度。
+        */
+        html, body { 
+            overflow: hidden; 
+            width: 100%; 
+            height: 100vh;
+            position: fixed; 
+            top: 0; left: 0; right: 0; bottom: 0;
+        }
+        
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            background-color: var(--bg-color); 
+            color: var(--text-color); 
+            display: flex; 
+            overflow: hidden; /* 双重保障 */
+        }
+
+        /* --- 侧边栏样式 --- */
+        .sidebar {
+            width: 240px;
+            background: var(--sidebar-bg);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+            z-index: 100; 
+            transform: translateX(0);
+            height: 100%; /* 侧边栏高度占满父容器 */
+        }
+        .logo-area {
+            padding: 16px 20px;
+            height: 60px; 
+            font-size: 20px;
+            font-weight: bold;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+        .nav-list { flex: 1; overflow-y: auto; padding: 15px 0; -webkit-overflow-scrolling: touch; }
+        
+        .nav-item {
+            padding: 12px 25px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 15px;
+            color: var(--text-secondary);
+            border-left: 3px solid transparent;
+        }
+        
+        .nav-item.active {
+            color: var(--primary-color);
+            background-color: #eff6ff;
+            border-left-color: var(--primary-color);
+            font-weight: 600;
+        }
+        .nav-icon { font-size: 18px; width: 24px; text-align: center; }
+
+        /* 手机端侧边栏底部的关闭按钮 */
+        .mobile-sidebar-close {
+            display: none;
+            padding: 15px;
+            text-align: center;
+            border-top: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            font-size: 14px;
+            cursor: pointer;
+            background: var(--bg-color);
+            flex-shrink: 0;
+        }
+        .mobile-sidebar-close:active { background: #e2e8f0; }
+
+        /* --- 手机端遮罩层 --- */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 90; 
+        }
+        .sidebar-overlay.active { display: block; }
+
+        /* --- 主内容区 --- */
+        .main-container { 
+            flex: 1; 
+            display: flex; 
+            flex-direction: column; 
+            height: 100%; /* 必须明确高度 */
+            overflow: hidden; /* 禁止主容器滚动，只允许子元素滚动 */
+            position: relative; 
+            z-index: 10; 
+            width: 100%;
+        }
+        
+        /* --- 顶部工具栏 (常驻) --- */
+        .header {
+            background: var(--card-bg);
+            padding: 10px 15px; 
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border-color);
+            z-index: 99;
+            flex-shrink: 0; /* 关键：防止被压缩，永远占据固定高度 */
+            height: 60px; 
+        }
+        
+        .header-content {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            gap: 10px;
+        }
+
+        /* --- 搜索栏容器 --- */
+        .search-container {
+            display: flex;
+            align-items: center;
+            flex: 1;
+            min-width: 0; 
+            position: relative;
+        }
+
+        .engine-switch {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-right: none;
+            border-radius: 6px 0 0 6px;
+            cursor: pointer;
+            color: var(--text-secondary);
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+        .engine-switch:hover { background: #e2e8f0; }
+
+        .search-input {
+            flex: 1;
+            height: 36px;
+            padding: 0 10px; 
+            border: 1px solid var(--border-color);
+            border-radius: 0 6px 6px 0;
+            background: var(--bg-color);
+            font-size: 14px;
+            outline: none;
+            min-width: 0; 
+        }
+        .search-input:focus { border-color: var(--primary-color); box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1); }
+
+        .search-hint {
+            display: none; 
+            position: absolute;
+            right: 10px;
+            font-size: 11px;
+            color: #cbd5e1;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+
+        /* --- 右侧操作区 --- */
+        .toolbar-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+
+        .icon-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            background: var(--card-bg);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            font-size: 16px;
+        }
+        .icon-btn:hover { background: var(--hover-bg); color: var(--primary-color); }
+
+        /* 设置下拉面板 */
+        .settings-panel {
+            position: absolute;
+            top: 55px;
+            right: 0;
+            width: 280px;
+            background: var(--card-bg);
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border-color);
+            padding: 15px;
+            display: none;
+            z-index: 1000;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .settings-panel.active { display: flex; }
+
+        .setting-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .setting-label { font-size: 14px; color: var(--text-color); display: flex; align-items: center; gap: 8px; }
+        
+        /* 开关样式 */
+        .switch { position: relative; width: 44px; height: 24px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; transition: .4s; border-radius: 24px; }
+        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--primary-color); }
+        input:checked + .slider:before { transform: translateX(20px); }
+
+        .btn { padding: 8px 12px; border-radius: 6px; border: none; cursor: pointer; font-size: 13px; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; }
+        .btn-primary { background: var(--primary-color); color: white; }
+        .btn-outline { background: transparent; border: 1px solid var(--border-color); color: var(--text-color); }
+        .btn:hover { opacity: 0.9; }
+
+        .status-text { font-size: 12px; color: var(--text-secondary); text-align: center; margin-top: -5px; }
+
+        /* --- 内容区域 --- */
+        .content-area { 
+            flex: 1; 
+            padding: 15px; 
+            overflow-y: auto; 
+            overflow-x: hidden; 
+            scroll-behavior: smooth; 
+            -webkit-overflow-scrolling: touch; 
+            position: relative;
+            /* 关键修改：min-height: 0 允许 flex 子元素在空间不足时正确收缩并显示滚动条 */
+            min-height: 0; 
+        }
+        
+        .category-section { margin-bottom: 30px; scroll-margin-top: 20px; }
+        
+        .content-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 5px 0;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-color);
+        }
+
+        .links-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); 
+            gap: 10px; 
+            width: 100%;
+        }
+
+        /* 卡片样式 */
+        .link-card {
+            background: transparent; 
+            border-radius: 6px;
+            padding: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            text-decoration: none;
+            color: var(--text-color);
+            border: none; 
+            box-shadow: none;
+            width: 100%; 
+            min-width: 0; 
+        }
+        .link-card:hover { background-color: var(--hover-bg); }
+        
+        .link-card .icon-wrapper {
+            width: 28px; height: 28px; 
+            border-radius: 4px;
+            background: #e2e8f0; 
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0; 
+            overflow: hidden;
+        }
+        .link-card .icon-wrapper img { width: 18px; height: 18px; object-fit: contain; }
+        .link-card .icon-wrapper i { font-size: 14px; color: var(--text-secondary); }
+
+        .link-info { overflow: hidden; min-width: 0; flex: 1; }
+        .link-title { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .link-desc { font-size: 11px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        .no-result { color: var(--text-secondary); text-align: center; padding: 30px; font-size: 14px; }
+
+        /* --- 弹窗样式 --- */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); display: none; justify-content: center; align-items: center; z-index: 2000; }
+        .modal { background: white; padding: 20px; border-radius: 12px; width: 90%; max-width: 350px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
+        .modal h3 { margin-bottom: 15px; text-align: center; font-size: 18px; }
+        .form-group { margin-bottom: 12px; }
+        .form-group label { display: block; margin-bottom: 5px; font-size: 12px; color: var(--text-secondary); }
+        .form-group input { width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px; outline: none; font-size: 14px; box-sizing: border-box; }
+
+        /* --- 搜索引擎菜单 --- */
+        .engine-menu {
+            position: absolute; 
+            display: none; 
+            background: var(--card-bg); 
+            border-radius: 6px; 
+            box-shadow: var(--shadow); 
+            border: 1px solid var(--border-color); 
+            z-index: 2000; 
+            overflow: hidden;
+            min-width: 120px;
+        }
+        .engine-menu-item {
+            padding: 10px 15px; 
+            cursor: pointer; 
+            display: flex; 
+            align-items: center; 
+            gap: 10px; 
+            font-size: 14px;
+            color: var(--text-color);
+            white-space: nowrap;
+        }
+        .engine-menu-item:hover { background: var(--hover-bg); }
+        .engine-menu-item i { width: 16px; text-align: center; }
+
+        /* --- 响应式 --- */
+        @media (max-width: 768px) {
+            .sidebar { 
+                position: fixed; 
+                left: -260px; 
+                height: 100%; 
+                top: 0;
+                transition: left 0.3s ease;
+                box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+                width: 260px;
+            }
+            .sidebar.active { left: 0; }
+            
+            .mobile-menu-btn { display: block !important; margin-right: 8px; font-size: 20px; color: var(--text-color); }
+            
+            .header { padding: 8px 10px; height: 56px; }
+            
+            .search-container { flex: 1; }
+            
+            .links-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 8px; 
+            }
+            
+            .content-area { padding: 10px; }
+            
+            .settings-panel { 
+                width: calc(100vw - 30px); 
+                right: 15px; 
+                left: 15px;
+                top: 55px;
+            }
+
+            .mobile-sidebar-close {
+                display: block;
+            }
+        }
+        
+        .mobile-menu-btn { display: none; }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
-    <div class="container">
-        <h1>导航页</h1>
-        <input id="searchBar" type="text" placeholder="搜索网址或分类..." oninput="filterNav()">
-        <div style="margin-bottom:18px">
-            <label for="configUrl">配置文件URL：</label>
-            <input type="text" id="configUrl" value="https://cdn.jsdelivr.net/gh/xlfam/navigate@main/navi.json" style="width:300px">
-            <button onclick="loadConfig()">加载</button>
+
+    <!-- 手机端侧边栏遮罩 -->
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+    <!-- 侧边栏 -->
+    <aside class="sidebar" id="sidebar">
+        <div class="logo-area">
+            Welcome to xlfam !
         </div>
-        <div id="navList"></div>
+        <nav class="nav-list" id="navList"></nav>
+        
+        <div class="mobile-sidebar-close" onclick="toggleSidebar()">
+            <i class="fas fa-chevron-left"></i> 收起菜单
+        </div>
+    </aside>
+
+    <!-- 主容器 -->
+    <div class="main-container">
+        <!-- 顶部栏 -->
+        <header class="header">
+            <div class="header-content">
+                <div class="mobile-menu-btn" onclick="toggleSidebar()"><i class="fas fa-bars"></i></div>
+                
+                <!-- 搜索栏 -->
+                <div class="search-container">
+                    <div class="engine-switch" id="engineSwitch" onclick="toggleEngineMenu()" title="切换搜索引擎">
+                        <i class="fas fa-spinner fa-spin"></i>
+                    </div>
+                    <input type="text" class="search-input" id="searchInput" placeholder="搜索书签..." autocomplete="off">
+                    <span class="search-hint" id="searchHint">加载中...</span>
+                </div>
+
+                <!-- 右侧操作区 -->
+                <div class="toolbar-actions">
+                    <div class="icon-btn" onclick="toggleSettingsPanel()" title="设置">
+                        <i class="fas fa-cog"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 设置下拉面板 -->
+            <div class="settings-panel" id="settingsPanel">
+                <div class="setting-row">
+                    <div class="setting-label">
+                        <i class="fas fa-network-wired"></i>
+                        <span id="switchLabel">外网模式</span>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="netSwitch" onchange="toggleNetwork()">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="setting-row">
+                    <button class="btn btn-outline" onclick="openSyncModal()">
+                        <i class="fas fa-sync-alt"></i> 同步数据
+                    </button>
+                </div>
+
+                <hr style="border:0; border-top:1px solid var(--border-color); margin:5px 0;">
+
+                <div id="authArea">
+                    <div id="loginBtnWrapper">
+                        <button class="btn btn-primary" onclick="openLoginModal()">
+                            <i class="fas fa-plug"></i> 连接配置源
+                        </button>
+                    </div>
+                    <div id="userInfoWrapper" style="display:none; flex-direction:column; gap:10px;">
+                        <div class="status-text" id="userName">
+                            <i class="fas fa-check-circle" style="color:green;"></i> 已连接
+                        </div>
+                        <button class="btn btn-outline" onclick="logout()">
+                            <i class="fas fa-unlink"></i> 断开连接
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- 内容区 -->
+        <main class="content-area" id="contentArea">
+            <div class="no-result">正在加载配置...</div>
+        </main>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
-    <script src="main.js"></script>
+
+    <!-- 登录配置弹窗 -->
+    <div class="modal-overlay" id="loginModal">
+        <div class="modal">
+            <h3>设置远程配置源</h3>
+            <div class="form-group">
+                <label>远程 JSON 地址 (必填)</label>
+                <input type="text" id="remoteUrl" placeholder="https://example.com/nav.json">
+            </div>
+            <div class="form-group">
+                <label>认证用户名 (可选)</label>
+                <input type="text" id="remoteUser" placeholder="留空表示公开访问">
+            </div>
+            <div class="form-group">
+                <label>认证密码 (可选)</label>
+                <input type="password" id="remotePass" placeholder="如果链接需要密码则填写">
+            </div>
+            <div style="display:flex; gap:10px; margin-top:20px;">
+                <button class="btn btn-outline" onclick="closeModal('loginModal')">取消</button>
+                <button class="btn btn-primary" onclick="performLogin()">保存并获取</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 搜索引擎选择菜单 -->
+    <div id="engineMenu" class="engine-menu"></div>
+
+    <script>
+        // --- 配置与状态 ---
+        let appState = {
+            config: null,
+            activeCat: 'top',
+            isInternal: false,
+            searchKey: '',
+            remoteConf: null,
+            currentEngineIndex: 0,
+            isLoggedIn: false
+        };
+
+        const DEFAULT_ENGINES = [
+            { name: 'Bing', url: 'https://www.bing.com/search?q=', icon: 'fab fa-microsoft' },
+            { name: 'Google', url: 'https://www.google.com/search?q=', icon: 'fab fa-google' },
+            { name: 'Baidu', url: 'https://www.baidu.com/s?wd=', icon: 'fas fa-paw' }
+        ];
+
+        const LS_CONFIG = 'nav_config_data';
+        const LS_REMOTE = 'nav_remote_conf';
+        const LS_ENGINE_IDX = 'nav_selected_engine_idx';
+        const LS_NETWORK_MODE = 'nav_network_mode';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadLocalCache(); 
+            initEventListeners();
+        });
+
+        function loadLocalCache() {
+            const cachedRemote = localStorage.getItem(LS_REMOTE);
+            if (cachedRemote) {
+                appState.remoteConf = JSON.parse(cachedRemote);
+                updateLoginUI(true);
+            }
+
+            const cachedData = localStorage.getItem(LS_CONFIG);
+            if (cachedData) {
+                console.log("从本地缓存加载配置");
+                try {
+                    appState.config = JSON.parse(cachedData);
+                    initAppAfterConfig();
+                    return;
+                } catch (e) {
+                    console.error("缓存解析失败", e);
+                    localStorage.removeItem(LS_CONFIG);
+                }
+            }
+            
+            fetch('./nav.json').then(r => r.json()).then(data => {
+                appState.config = data;
+                saveLocalCache();
+                initAppAfterConfig();
+            }).catch(err => {
+                console.error("加载默认配置失败", err);
+                initAppAfterConfig(); 
+            });
+        }
+
+        function initAppAfterConfig() {
+            const savedMode = localStorage.getItem(LS_NETWORK_MODE);
+            if (savedMode !== null) {
+                appState.isInternal = (savedMode === 'true');
+                const switchEl = document.getElementById('netSwitch');
+                if(switchEl) switchEl.checked = appState.isInternal;
+                const labelEl = document.getElementById('switchLabel');
+                if(labelEl) labelEl.innerText = appState.isInternal ? '内网模式' : '外网模式';
+            }
+
+            const savedIdx = localStorage.getItem(LS_ENGINE_IDX);
+            if (savedIdx !== null) {
+                appState.currentEngineIndex = parseInt(savedIdx);
+            }
+            
+            initEngineMenu();
+            renderPage();
+        }
+
+        function saveLocalCache() { 
+            localStorage.setItem(LS_CONFIG, JSON.stringify(appState.config)); 
+        }
+
+        function getEngines() {
+            return (appState.config && appState.config.searchEngines) ? appState.config.searchEngines : DEFAULT_ENGINES;
+        }
+
+        function initEngineMenu() {
+            const menu = document.getElementById('engineMenu');
+            const engines = getEngines();
+            let html = '';
+            
+            if (appState.currentEngineIndex >= engines.length) {
+                appState.currentEngineIndex = 0;
+            }
+
+            engines.forEach((engine, index) => {
+                html += `<div class="engine-menu-item" onclick="selectEngine(${index})">
+                            <i class="${engine.icon}"></i> ${engine.name}
+                         </div>`;
+            });
+            menu.innerHTML = html;
+            updateEngineUI();
+        }
+
+        function toggleEngineMenu() {
+            const menu = document.getElementById('engineMenu');
+            const btn = document.getElementById('engineSwitch');
+            if (menu.style.display === 'block') {
+                menu.style.display = 'none';
+            } else {
+                const rect = btn.getBoundingClientRect();
+                menu.style.top = (rect.bottom + 5) + 'px';
+                menu.style.left = rect.left + 'px';
+                menu.style.display = 'block';
+            }
+        }
+
+        function selectEngine(index) {
+            appState.currentEngineIndex = index;
+            localStorage.setItem(LS_ENGINE_IDX, index);
+            updateEngineUI();
+            document.getElementById('engineMenu').style.display = 'none';
+            document.getElementById('searchInput').focus();
+        }
+
+        function updateEngineUI() {
+            const engines = getEngines();
+            if (engines.length === 0) return;
+            const engine = engines[appState.currentEngineIndex];
+            if (engine) {
+                document.getElementById('engineSwitch').innerHTML = `<i class="${engine.icon}"></i>`;
+                const hint = document.getElementById('searchHint');
+                if(window.innerWidth > 768) {
+                    hint.style.display = 'block';
+                    hint.innerText = `Enter: ${engine.name}`;
+                } else {
+                    hint.style.display = 'none';
+                }
+            }
+        }
+
+        function renderPage() {
+            renderSidebar();
+            renderContent();
+        }
+
+        function renderSidebar() {
+            const navList = document.getElementById('navList');
+            let html = ``;
+            
+            if(appState.config && appState.config.categories) {
+                appState.config.categories.forEach(cat => {
+                    html += `<div class="nav-item ${appState.activeCat === cat.id ? 'active' : ''}" onclick="scrollToCategory('${cat.id}')">
+                                <i class="nav-icon fas ${getSidebarIconClass(cat.icon)}"></i> ${cat.name}
+                            </div>`;
+                });
+            }
+            navList.innerHTML = html;
+        }
+
+        function renderContent() {
+            const container = document.getElementById('contentArea');
+            
+            if (!appState.config || !appState.config.categories) {
+                container.innerHTML = '<div class="no-result">暂无书签数据，请检查配置或连接远程源。</div>';
+                return;
+            }
+
+            if (appState.searchKey) {
+                let allLinks = [];
+                appState.config.categories.forEach(cat => {
+                    cat.items.forEach(link => {
+                        if (link.title.toLowerCase().includes(appState.searchKey.toLowerCase())) {
+                            allLinks.push({ ...link, catName: cat.name });
+                        }
+                    });
+                });
+                if (allLinks.length === 0) {
+                    container.innerHTML = '<div class="no-result">未找到相关书签</div>';
+                    return;
+                }
+                container.innerHTML = `
+                    <div class="category-section">
+                        <div class="content-title">搜索结果: ${appState.searchKey}</div>
+                        <div class="links-grid">${allLinks.map(link => generateCardHtml(link)).join('')}</div>
+                    </div>`;
+            } else {
+                let html = '';
+                appState.config.categories.forEach(cat => {
+                    html += `
+                        <section class="category-section" id="cat-${cat.id}">
+                            <div class="content-title">
+                                <i class="fas ${getSidebarIconClass(cat.icon)}"></i> ${cat.name}
+                            </div>
+                            <div class="links-grid">${cat.items.map(link => generateCardHtml(link)).join('')}</div>
+                        </section>`;
+                });
+                container.innerHTML = html;
+            }
+        }
+
+        function generateCardHtml(link) {
+            let url = link.url;
+            if (appState.isInternal && link.url_in) url = link.url_in;
+            else if (!appState.isInternal && link.url_out) url = link.url_out;
+
+            const iconHtml = link.icon ? 
+                (link.icon.includes('fa-') || link.icon.startsWith('si-') ? `<i class="${link.icon}"></i>` : `<img src="${link.icon}" onerror="this.parentElement.innerHTML='<i class=\\'fas fa-link\\'></i>'">`) 
+                : '<i class="fas fa-link"></i>';
+
+            return `<a href="${url}" target="_blank" class="link-card">
+                        <div class="icon-wrapper">${iconHtml}</div>
+                        <div class="link-info">
+                            <div class="link-title">${link.title}</div>
+                            <div class="link-desc">${new URL(url).hostname}</div>
+                        </div>
+                    </a>`;
+        }
+
+        function scrollToCategory(id) {
+            const element = document.getElementById('cat-' + id);
+            if (element) {
+                // 使用 scrollIntoView 配合 CSS 的布局锁定，确保只有内容区滚动
+                element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                appState.activeCat = id;
+                renderSidebar();
+                if (window.innerWidth <= 768) {
+                    toggleSidebar();
+                }
+            }
+        }
+
+        function scrollToTop() {
+            document.getElementById('contentArea').scrollTo({ top: 0, behavior: 'smooth' });
+            appState.activeCat = 'top';
+            renderSidebar();
+            if (window.innerWidth <= 768) toggleSidebar();
+        }
+
+        function toggleNetwork() {
+            appState.isInternal = document.getElementById('netSwitch').checked;
+            localStorage.setItem(LS_NETWORK_MODE, appState.isInternal);
+            document.getElementById('switchLabel').innerText = appState.isInternal ? '内网模式' : '外网模式';
+            renderContent();
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            
+            sidebar.classList.toggle('active');
+            overlay.classList.toggle('active');
+        }
+
+        function toggleSettingsPanel() {
+            document.getElementById('settingsPanel').classList.toggle('active');
+        }
+
+        window.onclick = function(e) {
+            if (!e.target.closest('.settings-panel') && !e.target.closest('.icon-btn')) {
+                document.getElementById('settingsPanel').classList.remove('active');
+            }
+            if (!e.target.closest('#engineMenu') && !e.target.closest('#engineSwitch')) {
+                document.getElementById('engineMenu').style.display = 'none';
+            }
+        }
+
+        function initEventListeners() {
+            const searchInput = document.getElementById('searchInput');
+            searchInput.addEventListener('input', (e) => {
+                appState.searchKey = e.target.value;
+                renderContent();
+            });
+
+            searchInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && appState.searchKey.trim() !== '') {
+                    const engines = getEngines();
+                    const engine = engines[appState.currentEngineIndex];
+                    if (engine) {
+                        window.open(engine.url + encodeURIComponent(appState.searchKey), '_blank');
+                    }
+                }
+            });
+        }
+
+        function openLoginModal() {
+            if (appState.remoteConf) {
+                document.getElementById('remoteUrl').value = appState.remoteConf.url;
+                document.getElementById('remoteUser').value = appState.remoteConf.user;
+            }
+            document.getElementById('loginModal').style.display = 'flex';
+            toggleSettingsPanel(); 
+        }
+
+        function openSyncModal() {
+            if (!appState.remoteConf || !appState.remoteConf.url) {
+                openLoginModal();
+                alert("请先配置远程 JSON 地址");
+                return;
+            }
+            toggleSettingsPanel();
+            fetchRemoteConfig();
+        }
+
+        async function performLogin() {
+            const url = document.getElementById('remoteUrl').value;
+            const user = document.getElementById('remoteUser').value;
+            const pass = document.getElementById('remotePass').value;
+
+            if (!url) return alert("请输入远程 JSON 地址");
+
+            appState.remoteConf = { url, user, pass };
+            localStorage.setItem(LS_REMOTE, JSON.stringify(appState.remoteConf));
+            
+            await fetchRemoteConfig();
+            if(appState.isLoggedIn) {
+                updateLoginUI(true);
+                closeModal('loginModal');
+            }else{
+                localStorage.removeItem(LS_REMOTE);
+                appState.remoteConf = null;
+                updateLoginUI(false);
+            }
+        }
+
+        function updateLoginUI(isLoggedIn) {
+            document.getElementById('loginBtnWrapper').style.display = isLoggedIn ? 'none' : 'block';
+            document.getElementById('userInfoWrapper').style.display = isLoggedIn ? 'flex' : 'none';
+            if(isLoggedIn && appState.remoteConf) document.getElementById('userName').innerHTML = `<i class="fas fa-check-circle" style="color:green;"></i> 已连接`;
+        }
+
+        function logout() {
+            localStorage.removeItem(LS_REMOTE);
+            appState.remoteConf = null;
+            updateLoginUI(false);
+            alert("已断开连接，保留本地缓存");
+        }
+
+        async function fetchRemoteConfig() {
+            try {
+                const { url, user, pass } = appState.remoteConf;
+                const headers = new Headers();
+                if (user && pass) headers.set('Authorization', 'Basic ' + btoa(user + ":" + pass));
+
+                const response = await fetch(url+"?"+Math.random().toString(), { method: 'GET', headers: headers });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    appState.config = data;
+                    saveLocalCache();
+                    appState.currentEngineIndex = 0; 
+                    localStorage.removeItem(LS_ENGINE_IDX); 
+                    initEngineMenu(); 
+                    renderPage();
+                    appState.isLoggedIn = true;
+                    alert("同步成功！缓存已更新");
+                } else {
+                    alert("同步失败: " + response.statusText);
+                }
+            } catch (e) {
+                console.error(e);
+                appState.isLoggedIn = false;
+                alert("加载远程配置失败，请检查地址和认证信息。");
+            }
+        }
+
+        const closeModal = (id) => document.getElementById(id).style.display = 'none';
+        const getSidebarIconClass = (icon) => {
+            if(!icon) return 'fa-folder';
+            if(icon.includes('nas')) return 'fa-server';
+            if(icon.includes('work')) return 'fa-briefcase';
+            if(icon.includes('tool')) return 'fa-tools';
+            if(icon.includes('resource')) return 'fa-film';
+            if(icon.includes('interest')) return 'fa-tv-retro';
+            if(icon.includes('standard')) return 'fa-book';
+            return 'fa-star';
+        };
+    </script>
 </body>
 </html>
