@@ -2,7 +2,7 @@
 
 一个轻量级、响应式、支持内网/外网切换的 Web 导航主页。纯 HTML/CSS/JS 实现，无需数据库，基于 JSON 配置文件驱动，适合作为个人浏览器起始页或 NAS 导航页。
 
-![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)
+![Version](https://img.shields.io/badge/version-1.0.2-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
 ## ✨ 特性
